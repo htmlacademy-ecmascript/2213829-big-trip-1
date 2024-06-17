@@ -47,6 +47,7 @@ const createEditEventFormTemplate = (point, allOffers, allDestinations) => {
       .join('');
     return list;
   };
+
   const datalistTemplate = createDatalistTemplate(allDestinations);
 
   //Функция создания разметки секции Destination
@@ -213,7 +214,7 @@ const createEditEventFormTemplate = (point, allOffers, allDestinations) => {
               ${type}
             </label>
             <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${
-  destination?.name
+  destination.name
 }" list="destination-list-1" ${
   isDisabled ? 'disabled' : ''
 } required>

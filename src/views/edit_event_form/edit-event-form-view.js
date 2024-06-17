@@ -5,23 +5,42 @@ import dayjs from 'dayjs';
 
 import 'flatpickr/dist/flatpickr.min.css';
 import {DEFAULT_POINT, DEFAULT_OFFERS, DEFAULT_DESTINATION} from './default-data.js';
-
+import DestinationsModel from '../../models/destinations-model.js';
+import DestinationsApiService from '../../services/api/destinations-api-service.js';
+const AUTHORIZATION = 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=';
+const END_POINT = 'https://20.objects.htmlacademy.pro/big-trip';
 export default class EditEventFormView extends AbstractStatefulView {
   #datepickerFrom = null;
   #datepickerTo = null;
 
-  constructor(
-    point,
-    offers,
-    destinations,
-  ) {
+  constructor(point, offers, destinations) {
     super();
 
-    if (!offers.length) {
+    if (!offers?.length) {
       point = DEFAULT_POINT;
       offers = DEFAULT_OFFERS;
       destinations = DEFAULT_DESTINATION;
     }
+
+    const destinationsModel = new DestinationsModel(
+      new DestinationsApiService(END_POINT, AUTHORIZATION)
+    );
+
+    destinationsModel.init().then(() => {
+      const id = destinationsModel.destinationsId;
+
+      // Обновление переменной DEFAULT_DESTINATION
+      const updatedDefaultDestination = DEFAULT_DESTINATION.map(
+        (destination) => ({
+          ...destination,
+          id: id,
+        })
+      );
+
+      // Обновление переменной DEFAULT_POINT
+      DEFAULT_POINT.destination.id = id;
+      return updatedDefaultDestination;
+    });
 
     this._state = EditEventFormView.parseDataToState(
       point,
@@ -57,9 +76,15 @@ export default class EditEventFormView extends AbstractStatefulView {
 
   //Метод для сброса несохранённых данных. (Используется когда форма редактирования открыта и пользователь нажимает на Esc либо на кнопку закрытия задачи)
   reset = (pointData, offersData, destinationsData) => {
+    const selectedDestination = destinationsData.find(
+      (destination) => destination.id === pointData.destination.id
+    );
     this.updateElement(
       EditEventFormView.parseDataToState(
-        pointData,
+        {
+          ...pointData,
+          destination: selectedDestination, // сохраняем выбранный пункт назначения в состоянии
+        },
         offersData,
         destinationsData
       )
@@ -96,7 +121,6 @@ export default class EditEventFormView extends AbstractStatefulView {
       evt.target.value = '';
     }
 
-    //Запрет нуля первым значением
     evt.target.value = evt.target.value.replace(/^0/, '');
 
     this._setState({
@@ -110,24 +134,25 @@ export default class EditEventFormView extends AbstractStatefulView {
 
   #changeCityDestinationHandler = (evt) => {
     evt.preventDefault();
-    this._state.destinations.forEach((element) => {
-      if (evt.target.value === element.name) {
-        this.updateElement({
-          point: {
-            ...this._state.point,
-            destination: {
-              id: element.id, // добавила айдишник
-              name: element.name,
-              pictures: element.pictures,
-              description: element.description,
-
-            },
+    const selectedDestination = this._state.destinations.find(
+      (destination) => destination.name === evt.target.value
+    );
+    if (selectedDestination) {
+      this.updateElement({
+        point: {
+          ...this._state.point,
+          destination: {
+            id: selectedDestination.id,
+            name: selectedDestination.name,
+            pictures: selectedDestination.pictures,
+            description: selectedDestination.description,
           },
-          offers: [...this._state.offers],
-          destinations: [...this._state.destinations],
-        });
-      }
-    });
+        },
+        offers: [...this._state.offers],
+        destinations: [...this._state.destinations],
+
+      });
+    }
   };
 
   #clearCityDestinationInputHandler = (evt) => {
@@ -137,13 +162,14 @@ export default class EditEventFormView extends AbstractStatefulView {
 
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
-    this._callback.formSubmit(
-      EditEventFormView.parseStateToData(
-        this._state.point,
-        this._state.destinations,
-        this._state.offers,
-      )
+    const id = this._state.point.destination.id; // Получаем id из выбранного пункта назначения
+    const data = EditEventFormView.parseStateToData(
+      this._state.point,
+      this._state.offers,
+      this._state.destinations,
+      id // Передаем id в данные для отправки на сервер
     );
+    this._callback.formSubmit(data);
   };
 
   #dateFromChangeHandler = ([userDateFrom]) => {
@@ -281,8 +307,7 @@ export default class EditEventFormView extends AbstractStatefulView {
       EditEventFormView.parseStateToData(
         this._state.point,
         this._state.offers,
-        this._state.destinations,
-
+        this._state.destinations
       )
     );
   };
@@ -303,7 +328,6 @@ export default class EditEventFormView extends AbstractStatefulView {
     const point = { ...statePoint };
     const offers = { ...stateOffers };
     const destinations = { ...stateDestinations };
-
 
     delete point.isDisabled;
     delete point.isSaving;

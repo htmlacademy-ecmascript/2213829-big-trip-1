@@ -74,7 +74,7 @@ export default class RoutePresenter {
   }
 
   get destinations() {
-    return this.#destinationsModel.destinations;
+    return this.#destinationsModel.destinations; // Получение из модели массива destinations
   }
 
   init () {

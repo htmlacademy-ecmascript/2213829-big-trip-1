@@ -1,7 +1,6 @@
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 
-
 const abc = 'abcdefghijklmnopqrstuvwxyz';
 let rs = '';
 while (rs.length < 6) {
@@ -24,7 +23,7 @@ export const DEFAULT_OFFERS = [
 
 export const DEFAULT_DESTINATION = [
   {
-    id: uuidv4(abc),
+    id: '',
     name: 'Vien',
     description:
       'Vien, with a beautiful old town, for those who value comfort and coziness.',
@@ -69,7 +68,7 @@ export const DEFAULT_POINT = {
   isFavorite: false,
   offers: [],
   destination: {
-    id: uuidv4(abc),
+    id: '',
     name: 'Vien',
     description:
       'Vien, with a beautiful old town, for those who value comfort and coziness.',
